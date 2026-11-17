@@ -4,6 +4,8 @@ build/
 obj/
 *.iml
 local.properties
+ghostgram.local.properties
+local-secrets/
 TMessagesProj/.cxx/
 TMessagesProj/jniLibs/
 TMessagesProj/jniRes/

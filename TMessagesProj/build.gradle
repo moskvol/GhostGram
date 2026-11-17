@@ -1,5 +1,16 @@
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
+def ghostgramLocal = new Properties()
+def ghostgramLocalFile = rootProject.file('ghostgram.local.properties')
+if (ghostgramLocalFile.isFile()) {
+    ghostgramLocalFile.withInputStream { ghostgramLocal.load(it) }
+}
+def ghostgramApiId = ghostgramLocal.getProperty('TELEGRAM_API_ID', '4')
+def ghostgramApiHash = ghostgramLocal.getProperty('TELEGRAM_API_HASH', '014b35b6184100b085b0d0572f9b5103')
+if (!(ghostgramApiId ==~ /[0-9]+/) || !(ghostgramApiHash ==~ /[0-9a-fA-F]{32}/)) {
+    throw new GradleException('Invalid Telegram API credentials in ghostgram.local.properties')
+}
+
 apply plugin: 'com.android.library'
 apply plugin: 'org.telegram.build-plugin'
 apply plugin: 'idea'
@@ -147,6 +158,8 @@ android {
     defaultConfig {
         minSdkVersion 23
         targetSdkVersion 36
+        buildConfigField 'int', 'GHOSTGRAM_API_ID', ghostgramApiId
+        buildConfigField 'String', 'GHOSTGRAM_API_HASH', '"' + ghostgramApiHash + '"'
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
