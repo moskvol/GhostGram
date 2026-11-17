@@ -26,4 +26,15 @@ public final class GhostGramFeatures {
     public static boolean hideTyping() {
         return preferences().getBoolean("ghost_hide_typing", false);
     }
+
+    public static int notificationIcon() {
+        int choice = preferences().getInt("notification_icon", 0);
+        if (choice == 1) {
+            return R.drawable.notification_ghostgram;
+        }
+        if (choice == 2) {
+            return R.drawable.notification_ghostgram_dots;
+        }
+        return R.drawable.notification;
+    }
 }

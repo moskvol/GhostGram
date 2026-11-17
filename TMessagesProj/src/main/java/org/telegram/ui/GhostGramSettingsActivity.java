@@ -5,9 +5,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -21,9 +24,12 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -31,11 +37,9 @@ import java.nio.charset.StandardCharsets;
 /** Local GhostGram controls. No Telegram server state is changed here. */
 public class GhostGramSettingsActivity extends BaseFragment {
     private static final String PREFS = "ghostgram_mod";
-    private static final int BACKGROUND = 0xff111b26;
-    private static final int CARD = 0xff1d2a39;
-    private static final int ACCENT = 0xff73bde9;
     private static final int REQUEST_EXPORT = 731;
     private static final int REQUEST_IMPORT = 732;
+    private static final int REQUEST_FONT = 733;
     private static final String[] CATEGORIES = {
             "Основные", "Внешний вид", "Чаты", "Режим призрака", "Антиудаление",
             "Ghost Premium", "Плагины", "Приватность", "Другое"
@@ -72,7 +76,7 @@ public class GhostGramSettingsActivity extends BaseFragment {
         setHasOwnBackground(true);
         simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
         simpleActionBar.setTitle(category < 0 ? "GhostGram" : CATEGORIES[category]);
-        simpleActionBar.setBackgroundColor(background(context));
+        simpleActionBar.setBackgroundColor(actionBarBackground(context));
         simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -102,7 +106,8 @@ public class GhostGramSettingsActivity extends BaseFragment {
         super.onResume();
         if (scrollView != null && getParentActivity() != null) {
             scrollView.setBackgroundColor(background(getParentActivity()));
-            simpleActionBar.setBackgroundColor(background(getParentActivity()));
+            simpleActionBar.setBackgroundColor(actionBarBackground(getParentActivity()));
+            applyFont(scrollView, menuTypeface(getParentActivity()));
             if (versionView != null) {
                 versionView.setVisibility(prefs(getParentActivity()).getBoolean("show_version", true) ? View.VISIBLE : View.GONE);
             }
@@ -124,21 +129,21 @@ public class GhostGramSettingsActivity extends BaseFragment {
         logoParams.topMargin = dp(12);
         content.addView(logo, logoParams);
 
-        TextView title = text(context, "GhostGram", 20, Color.WHITE);
+        TextView title = text(context, "GhostGram", 20, primary());
         title.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(-1, -2);
         titleParams.topMargin = dp(4);
         content.addView(title, titleParams);
-        versionView = text(context, BuildVars.BUILD_VERSION_STRING, 12, 0xffa6b2c0);
+        versionView = text(context, BuildVars.BUILD_VERSION_STRING, 12, secondary());
         versionView.setGravity(Gravity.CENTER);
         content.addView(versionView);
-        premiumView = text(context, "★ Ghost Premium", 12, ACCENT);
+        premiumView = text(context, "★ Ghost Premium", 12, accent());
         premiumView.setGravity(Gravity.CENTER);
         content.addView(premiumView);
         versionView.setVisibility(prefs(context).getBoolean("show_version", true) ? View.VISIBLE : View.GONE);
         premiumView.setVisibility(prefs(context).getBoolean("ghost_premium", false) ? View.VISIBLE : View.GONE);
 
-        TextView header = text(context, "Категории", 13, ACCENT);
+        TextView header = text(context, "Категории", 13, accent());
         LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(-1, -2);
         headerParams.topMargin = dp(24);
         headerParams.bottomMargin = dp(8);
@@ -153,7 +158,7 @@ public class GhostGramSettingsActivity extends BaseFragment {
     }
 
     private void buildCategory(Context context, LinearLayout content) {
-        TextView heading = text(context, CATEGORIES[category], 22, Color.WHITE);
+        TextView heading = text(context, CATEGORIES[category], 22, primary());
         LinearLayout.LayoutParams headingParams = new LinearLayout.LayoutParams(-1, -2);
         headingParams.topMargin = dp(14);
         headingParams.bottomMargin = dp(18);
@@ -165,8 +170,13 @@ public class GhostGramSettingsActivity extends BaseFragment {
             link(context, content, R.drawable.settings_data, "Экспорт настроек", this::exportSettings);
             link(context, content, R.drawable.settings_data, "Импорт настроек", this::importSettings);
         } else if (category == 1) {
+            switchRow(context, content, "Системный акцент Material You", "material_you_menu", false);
             switchRow(context, content, "AMOLED-фон меню GhostGram", "amoled_menu", false);
-            link(context, content, R.drawable.settings_chat, "Оформление Telegram", () -> presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC)));
+            link(context, content, R.drawable.settings_chat, "Темы, цвета, размер текста и форма сообщений", () -> presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC)));
+            link(context, content, R.drawable.settings_chat, "Ночная тема", () -> presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT)));
+            link(context, content, R.drawable.settings_premium, "Значок приложения GhostGram", this::chooseLauncherIcon);
+            link(context, content, R.drawable.settings_language, "Шрифт меню GhostGram", this::chooseFont);
+            link(context, content, R.drawable.settings_data, "Значок уведомлений", this::chooseNotificationIcon);
         } else if (category == 2) {
             link(context, content, R.drawable.settings_folders, "Папки чатов Telegram", () -> presentFragment(new FiltersSetupActivity()));
             info(context, content, "В меню каждого чата есть зашифрованная локальная заметка GhostGram.");
@@ -198,7 +208,7 @@ public class GhostGramSettingsActivity extends BaseFragment {
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(dp(16), 0, dp(12), 0);
         card.addView(row, new LinearLayout.LayoutParams(-1, dp(56)));
-        TextView name = text(context, label, 15, Color.WHITE);
+        TextView name = text(context, label, 15, primary());
         row.addView(name, new LinearLayout.LayoutParams(0, -2, 1));
         Switch control = new Switch(context);
         control.setChecked(prefs(context).getBoolean(key, defaultValue));
@@ -206,7 +216,9 @@ public class GhostGramSettingsActivity extends BaseFragment {
             prefs(context).edit().putBoolean(key, checked).apply();
             if ("amoled_menu".equals(key)) {
                 scrollView.setBackgroundColor(background(context));
-                simpleActionBar.setBackgroundColor(background(context));
+                simpleActionBar.setBackgroundColor(actionBarBackground(context));
+            } else if ("material_you_menu".equals(key)) {
+                Toast.makeText(context, "Акцент обновится после открытия меню", Toast.LENGTH_SHORT).show();
             } else if ("hide_recents".equals(key) && LaunchActivity.instance != null) {
                 LaunchActivity.instance.updateGhostGramSecureFlag();
             }
@@ -224,7 +236,7 @@ public class GhostGramSettingsActivity extends BaseFragment {
         line.setGravity(Gravity.CENTER_VERTICAL);
         line.setPadding(dp(16), 0, dp(12), 0);
         card.addView(line, new LinearLayout.LayoutParams(-1, dp(56)));
-        TextView name = text(context, label, 15, Color.WHITE);
+        TextView name = text(context, label, 15, primary());
         line.addView(name, new LinearLayout.LayoutParams(0, -2, 1));
         Switch control = new Switch(context);
         control.setChecked(checked);
@@ -251,18 +263,18 @@ public class GhostGramSettingsActivity extends BaseFragment {
         card.addView(line, new LinearLayout.LayoutParams(-1, dp(54)));
         ImageView image = new ImageView(context);
         image.setImageResource(icon);
-        image.setColorFilter(0xff9da9b7);
+        image.setColorFilter(secondary());
         line.addView(image, new LinearLayout.LayoutParams(dp(22), dp(22)));
-        TextView name = text(context, label, 15, Color.WHITE);
+        TextView name = text(context, label, 15, primary());
         LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(0, -2, 1);
         nameParams.leftMargin = dp(16);
         line.addView(name, nameParams);
-        TextView arrow = text(context, "›", 23, 0xff7d8a98);
+        TextView arrow = text(context, "›", 23, secondary());
         line.addView(arrow);
         line.setOnClickListener(v -> action.run());
         if (divider) {
             View border = new View(context);
-            border.setBackgroundColor(0xff2b3948);
+            border.setBackgroundColor(Theme.getColor(Theme.key_divider));
             LinearLayout.LayoutParams borderParams = new LinearLayout.LayoutParams(-1, dp(1));
             borderParams.leftMargin = dp(52);
             card.addView(border, borderParams);
@@ -270,7 +282,7 @@ public class GhostGramSettingsActivity extends BaseFragment {
     }
 
     private void info(Context context, LinearLayout content, String message) {
-        TextView view = text(context, message, 14, 0xffa6b2c0);
+        TextView view = text(context, message, 14, secondary());
         view.setLineSpacing(dp(3), 1);
         content.addView(view);
     }
@@ -290,18 +302,123 @@ public class GhostGramSettingsActivity extends BaseFragment {
         startActivityForResult(intent, REQUEST_IMPORT);
     }
 
+    private void chooseNotificationIcon() {
+        Context context = getParentActivity();
+        if (context == null) return;
+        String[] choices = {"Обычный Telegram", "Призрак", "Точечный призрак"};
+        int current = prefs(context).getInt("notification_icon", 0);
+        new android.app.AlertDialog.Builder(context)
+                .setTitle("Значок уведомлений")
+                .setSingleChoiceItems(choices, current, (dialog, choice) -> {
+                    prefs(context).edit().putInt("notification_icon", choice).apply();
+                    dialog.dismiss();
+                })
+                .show();
+    }
+
+    private void chooseLauncherIcon() {
+        Context context = getParentActivity();
+        if (context == null) return;
+        LauncherIconController.LauncherIcon[] icons = {
+                LauncherIconController.LauncherIcon.DEFAULT,
+                LauncherIconController.LauncherIcon.GHOST_NOTHING,
+                LauncherIconController.LauncherIcon.GHOST_INDUSTRIAL,
+                LauncherIconController.LauncherIcon.GHOST_MATERIAL
+        };
+        String[] choices = {"GhostGram", "Точечный", "Индустриальный", "Material"};
+        int current = 0;
+        for (int i = 0; i < icons.length; i++) {
+            if (LauncherIconController.isEnabled(icons[i])) current = i;
+        }
+        new android.app.AlertDialog.Builder(context)
+                .setTitle("Значок приложения")
+                .setSingleChoiceItems(choices, current, (dialog, choice) -> {
+                    LauncherIconController.setIcon(icons[choice]);
+                    dialog.dismiss();
+                    Toast.makeText(context, "Значок приложения изменён", Toast.LENGTH_SHORT).show();
+                })
+                .show();
+    }
+
+    private void chooseFont() {
+        Context context = getParentActivity();
+        if (context == null) return;
+        String[] choices = {"Системный", "Моноширинный", "С засечками", "Импортировать TTF/OTF"};
+        int current = prefs(context).getInt("font_mode", 0);
+        new android.app.AlertDialog.Builder(context)
+                .setTitle("Шрифт меню GhostGram")
+                .setSingleChoiceItems(choices, current, (dialog, choice) -> {
+                    dialog.dismiss();
+                    if (choice == 3) {
+                        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                        intent.addCategory(Intent.CATEGORY_OPENABLE);
+                        intent.setType("*/*");
+                        startActivityForResult(intent, REQUEST_FONT);
+                    } else {
+                        prefs(context).edit().putInt("font_mode", choice).apply();
+                        applyFont(scrollView, menuTypeface(context));
+                    }
+                })
+                .show();
+    }
+
+    private Typeface menuTypeface(Context context) {
+        int mode = prefs(context).getInt("font_mode", 0);
+        if (mode == 1) return Typeface.MONOSPACE;
+        if (mode == 2) return Typeface.SERIF;
+        if (mode == 3) {
+            try {
+                return Typeface.createFromFile(new File(context.getFilesDir(), "ghostgram-font"));
+            } catch (Exception ignored) {
+                return Typeface.DEFAULT;
+            }
+        }
+        return Typeface.DEFAULT;
+    }
+
+    private void applyFont(View root, Typeface font) {
+        if (root instanceof TextView) {
+            ((TextView) root).setTypeface(font);
+        } else if (root instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) root;
+            for (int i = 0; i < group.getChildCount(); i++) applyFont(group.getChildAt(i), font);
+        }
+    }
+
     @Override
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
         if (resultCode != Activity.RESULT_OK || data == null || data.getData() == null || getParentActivity() == null) return;
         Context context = getParentActivity();
         try {
-            if (requestCode == REQUEST_EXPORT) {
+            if (requestCode == REQUEST_FONT) {
+                File font = new File(context.getFilesDir(), "ghostgram-font");
+                try (InputStream input = context.getContentResolver().openInputStream(data.getData());
+                     OutputStream output = new FileOutputStream(font)) {
+                    if (input == null) throw new IllegalArgumentException("Empty font");
+                    byte[] bytes = new byte[8192];
+                    int count, total = 0;
+                    while ((count = input.read(bytes)) != -1) {
+                        total += count;
+                        if (total > 4 * 1024 * 1024) throw new IllegalArgumentException("Font too large");
+                        output.write(bytes, 0, count);
+                    }
+                }
+                Typeface.createFromFile(font);
+                prefs(context).edit().putInt("font_mode", 3).apply();
+                applyFont(scrollView, menuTypeface(context));
+                Toast.makeText(context, "Шрифт меню применён", Toast.LENGTH_SHORT).show();
+            } else if (requestCode == REQUEST_EXPORT) {
                 SharedPreferences settings = prefs(context);
                 JSONObject json = new JSONObject();
                 json.put("format", 1);
                 json.put("show_version", settings.getBoolean("show_version", true));
                 json.put("amoled_menu", settings.getBoolean("amoled_menu", false));
+                json.put("material_you_menu", settings.getBoolean("material_you_menu", false));
                 json.put("ghost_premium", settings.getBoolean("ghost_premium", false));
+                json.put("local_verified", settings.getBoolean("local_verified", false));
+                json.put("ghost_hide_typing", settings.getBoolean("ghost_hide_typing", false));
+                json.put("notification_icon", settings.getInt("notification_icon", 0));
+                json.put("font_mode", Math.min(settings.getInt("font_mode", 0), 2));
                 json.put("hide_recents", settings.getBoolean("hide_recents", false));
                 json.put("autoplay_video", SharedConfig.isAutoplayVideo());
                 json.put("autoplay_gifs", SharedConfig.isAutoplayGifs());
@@ -328,7 +445,12 @@ public class GhostGramSettingsActivity extends BaseFragment {
                 prefs(context).edit()
                         .putBoolean("show_version", json.getBoolean("show_version"))
                         .putBoolean("amoled_menu", json.getBoolean("amoled_menu"))
+                        .putBoolean("material_you_menu", json.optBoolean("material_you_menu", false))
                         .putBoolean("ghost_premium", json.getBoolean("ghost_premium"))
+                        .putBoolean("local_verified", json.optBoolean("local_verified", false))
+                        .putBoolean("ghost_hide_typing", json.optBoolean("ghost_hide_typing", false))
+                        .putInt("notification_icon", Math.max(0, Math.min(2, json.optInt("notification_icon", 0))))
+                        .putInt("font_mode", Math.max(0, Math.min(2, json.optInt("font_mode", 0))))
                         .putBoolean("hide_recents", json.optBoolean("hide_recents", false))
                         .apply();
                 if (LaunchActivity.instance != null) LaunchActivity.instance.updateGhostGramSecureFlag();
@@ -345,14 +467,38 @@ public class GhostGramSettingsActivity extends BaseFragment {
         LinearLayout card = new LinearLayout(context);
         card.setOrientation(LinearLayout.VERTICAL);
         GradientDrawable shape = new GradientDrawable();
-        shape.setColor(CARD);
-        shape.setCornerRadius(dp(20));
+        shape.setColor(prefs(context).getBoolean("amoled_menu", false) && Theme.isCurrentThemeDark()
+                ? Color.BLACK : Theme.getColor(Theme.key_windowBackgroundWhite));
+        shape.setCornerRadius(dp(12));
         card.setBackground(shape);
         return card;
     }
 
     private int background(Context context) {
-        return prefs(context).getBoolean("amoled_menu", false) ? Color.BLACK : BACKGROUND;
+        return prefs(context).getBoolean("amoled_menu", false) && Theme.isCurrentThemeDark()
+                ? Color.BLACK : Theme.getColor(Theme.key_windowBackgroundGray);
+    }
+
+    private int actionBarBackground(Context context) {
+        return prefs(context).getBoolean("amoled_menu", false) && Theme.isCurrentThemeDark()
+                ? Color.BLACK : Theme.getColor(Theme.key_actionBarDefault);
+    }
+
+    private int primary() {
+        return Theme.getColor(Theme.key_windowBackgroundWhiteBlackText);
+    }
+
+    private int secondary() {
+        return Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2);
+    }
+
+    private int accent() {
+        Context context = getParentActivity();
+        if (context != null && Build.VERSION.SDK_INT >= 31
+                && prefs(context).getBoolean("material_you_menu", false)) {
+            return context.getColor(android.R.color.system_accent1_500);
+        }
+        return Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
     }
 
     private SharedPreferences prefs(Context context) {
@@ -364,6 +510,7 @@ public class GhostGramSettingsActivity extends BaseFragment {
         view.setText(value);
         view.setTextSize(sp);
         view.setTextColor(color);
+        view.setTypeface(menuTypeface(context));
         return view;
     }
 

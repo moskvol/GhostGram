@@ -20,6 +20,7 @@ public class LauncherIconController {
 
     public static boolean isEnabled(LauncherIcon icon) {
         Context ctx = ApplicationLoader.applicationContext;
+        if (!isSupported(icon)) return false;
         int i = ctx.getPackageManager().getComponentEnabledSetting(icon.getComponentName(ctx));
         return i == PackageManager.COMPONENT_ENABLED_STATE_ENABLED || i == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT && icon == LauncherIcon.DEFAULT;
     }
@@ -28,8 +29,19 @@ public class LauncherIconController {
         Context ctx = ApplicationLoader.applicationContext;
         PackageManager pm = ctx.getPackageManager();
         for (LauncherIcon i : LauncherIcon.values()) {
+            if (!isSupported(i)) continue;
             pm.setComponentEnabledSetting(i.getComponentName(ctx), i == icon ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED :
                     PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+        }
+    }
+
+    public static boolean isSupported(LauncherIcon icon) {
+        Context ctx = ApplicationLoader.applicationContext;
+        try {
+            ctx.getPackageManager().getActivityInfo(icon.getComponentName(ctx), PackageManager.MATCH_DISABLED_COMPONENTS);
+            return true;
+        } catch (PackageManager.NameNotFoundException ignored) {
+            return false;
         }
     }
 
@@ -39,7 +51,10 @@ public class LauncherIconController {
         AQUA("AquaIcon", R.drawable.icon_4_background_sa, R.mipmap.icon_foreground_sa, R.string.AppIconAqua),
         PREMIUM("PremiumIcon", R.drawable.icon_3_background_sa, R.mipmap.icon_3_foreground_sa, R.string.AppIconPremium, true),
         TURBO("TurboIcon", R.drawable.icon_5_background_sa, R.mipmap.icon_5_foreground_sa, R.string.AppIconTurbo, true),
-        NOX("NoxIcon", R.mipmap.icon_2_background_sa, R.mipmap.icon_foreground_sa, R.string.AppIconNox, true);
+        NOX("NoxIcon", R.mipmap.icon_2_background_sa, R.mipmap.icon_foreground_sa, R.string.AppIconNox, true),
+        GHOST_NOTHING("GhostNothingIcon", R.drawable.ghostgram_nothing_art, android.R.color.transparent, R.string.GhostIconNothing),
+        GHOST_INDUSTRIAL("GhostIndustrialIcon", R.drawable.ghostgram_industrial_art, android.R.color.transparent, R.string.GhostIconIndustrial),
+        GHOST_MATERIAL("GhostMaterialIcon", R.drawable.ghostgram_material_art, android.R.color.transparent, R.string.GhostIconMaterial);
 
         public final String key;
         public final int background;
