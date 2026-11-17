@@ -10,6 +10,12 @@ def ghostgramStoreFile = rootProject.file(ghostgramSigning.getProperty('RELEASE_
 def ghostgramStorePassword = ghostgramSigning.getProperty('RELEASE_STORE_PASSWORD', RELEASE_STORE_PASSWORD)
 def ghostgramKeyAlias = ghostgramSigning.getProperty('RELEASE_KEY_ALIAS', RELEASE_KEY_ALIAS)
 def ghostgramKeyPassword = ghostgramSigning.getProperty('RELEASE_KEY_PASSWORD', RELEASE_KEY_PASSWORD)
+def ghostgramApp = new Properties()
+def ghostgramAppFile = rootProject.file('ghostgram.local.properties')
+if (ghostgramAppFile.isFile()) {
+    ghostgramAppFile.withInputStream { ghostgramApp.load(it) }
+}
+def ghostgramPackage = ghostgramApp.getProperty('GHOSTGRAM_PACKAGE')
 
 repositories {
     mavenCentral()
@@ -37,7 +43,7 @@ android {
     compileSdkVersion 36
     buildToolsVersion '36.0.0'
 
-    defaultConfig.applicationId = APP_PACKAGE
+    defaultConfig.applicationId = ghostgramPackage ?: APP_PACKAGE
 
 
     lintOptions {
@@ -85,7 +91,7 @@ android {
             debuggable true
             jniDebuggable true
             signingConfig signingConfigs.debug
-            applicationIdSuffix ".web"
+            applicationIdSuffix(ghostgramPackage ? "" : ".web")
             minifyEnabled false
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), '../TMessagesProj/proguard-rules.pro'
@@ -96,7 +102,7 @@ android {
             debuggable false
             jniDebuggable false
             signingConfig signingConfigs.release
-            applicationIdSuffix ".web"
+            applicationIdSuffix(ghostgramPackage ? "" : ".web")
             minifyEnabled true
             shrinkResources true
             multiDexEnabled true

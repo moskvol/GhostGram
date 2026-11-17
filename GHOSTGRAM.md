@@ -27,6 +27,10 @@ GhostGram — модификация открытого Android-клиента T
 
 Для собственной сборки создайте файл `ghostgram.local.properties` в корне репозитория с двумя строками `TELEGRAM_API_ID=...` и `TELEGRAM_API_HASH=...`. Файл исключён из Git. Без него используется тестовый API исходного Telegram, который нельзя применять для публичного APK.
 
+Для отдельного Android-приложения добавьте в тот же файл `GHOSTGRAM_PACKAGE=com.moskvol.ghostgram` (или свой уникальный идентификатор). Для standalone-варианта Gradle тогда убирает суффикс `.web`. Package ID должен точно совпадать с Android-приложением в Firebase `google-services.json`.
+
+Личный Firebase-файл поместите в `TMessagesProj_AppStandalone/src/debug/google-services.json` для debug-варианта и в `TMessagesProj_AppStandalone/src/standalone/google-services.json` для standalone-выпуска. Эти два файла исключены из Git; файл в корне модуля — тестовая конфигурация исходного Telegram.
+
 Для собственной подписи создайте `local-secrets/signing.properties` со значениями `RELEASE_STORE_FILE`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD`. Укажите путь к своему keystore относительно корня проекта. Папка `local-secrets/` исключена из Git. Сохраните keystore и пароли в надёжном резервном месте: без них нельзя подписывать обновления уже установленного приложения. Без этого файла сборка использует тестовый ключ исходного проекта и не подходит для публикации.
 
 ```powershell

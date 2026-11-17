@@ -6,6 +6,8 @@ obj/
 local.properties
 ghostgram.local.properties
 local-secrets/
+TMessagesProj_AppStandalone/src/debug/google-services.json
+TMessagesProj_AppStandalone/src/standalone/google-services.json
 TMessagesProj/.cxx/
 TMessagesProj/jniLibs/
 TMessagesProj/jniRes/
