@@ -11,15 +11,16 @@ GhostGram — модификация открытого Android-клиента T
 - Локальная заметка для каждого аккаунта, чата и темы. Содержимое шифруется AES-256-GCM ключом Android Keystore.
 - Управление автозапуском видео и GIF через существующие настройки Telegram.
 - Переходы к штатным настройкам темы, папок чатов, PIN-кода, приватности, энергосбережения, загрузок и кэша.
-- Локальный значок Ghost Premium **только в меню GhostGram**. Он не даёт подписку Telegram Premium.
+- Локальные значки верификации и Ghost Premium в собственном профиле; они видны только в этом клиенте и не меняют права аккаунта на серверах Telegram.
+- Отключение отправки индикатора набора текста. Настройки видимости статуса в сети остаются в штатном разделе приватности Telegram.
 
 ## Ограничения
 
 - «Антиудаление», менеджер плагинов, общая AMOLED-тема, переводчик и другие функции первоначального задания ещё не реализованы. Пустые категории не следует считать готовыми функциями.
 - Telegram API требует корректной работы статусов активности и прочтения; функции подавления этих сигналов не реализуются. См. [условия Telegram API](https://core.telegram.org/api/terms).
 - Открытая версия исходников по умолчанию использует тестовые API ID/hash и package ID исходного standalone-клиента `org.telegram.messenger.web`. Для самостоятельной публикации нужны собственные API ID/hash и идентификатор приложения. Локальная тестовая сборка автора использует отдельный приватный API-конфиг и собственный ключ подписи.
-- APK собран и проверен по подписи, но запуск, авторизация и работа функций на телефоне пока не проверены.
-- Локальный debug APK не является проверенной release-сборкой для распространения. Для публичного APK ещё требуется отдельная Firebase-конфигурация и проверка на устройстве.
+- Приватный APK установлен и запущен на Nothing Phone (3a) Pro; вход в аккаунт и все функции пока не проверены.
+- Для публичного APK требуется отдельная проверка функций на устройстве и решение о публикации индивидуальных API ID/hash, которые можно извлечь из бинарного файла.
 
 ## Сборка
 
@@ -34,10 +35,10 @@ GhostGram — модификация открытого Android-клиента T
 Для собственной подписи создайте `local-secrets/signing.properties` со значениями `RELEASE_STORE_FILE`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD`. Укажите путь к своему keystore относительно корня проекта. Папка `local-secrets/` исключена из Git. Сохраните keystore и пароли в надёжном резервном месте: без них нельзя подписывать обновления уже установленного приложения. Без этого файла сборка использует тестовый ключ исходного проекта и не подходит для публикации.
 
 ```powershell
-java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain :TMessagesProj_AppStandalone:assembleAfatDebug -Pandroid.injected.build.abi=arm64-v8a
+java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain :TMessagesProj_AppStandalone:assembleAfatDebug -Pandroid.injected.build.abi=arm64-v8a -Pandroid.injected.testOnly=false
 ```
 
-APK появится в `TMessagesProj_AppStandalone/build/intermediates/apk/afat/debug/app.apk`. В репозитории есть `gradlew` для Unix, но нет `gradlew.bat`, поэтому на Windows используется команда выше.
+APK появится в `TMessagesProj_AppStandalone/build/intermediates/apk/afat/debug/app.apk`. Для релизной сборки замените `assembleAfatDebug` на `assembleAfatStandalone`; результат будет в `TMessagesProj_AppStandalone/build/intermediates/apk/afat/standalone/app.apk`. Флаг `-Pandroid.injected.testOnly=false` обязателен для установки APK из файлового менеджера: без него Android возвращает `INSTALL_FAILED_TEST_ONLY`. В репозитории есть `gradlew` для Unix, но нет `gradlew.bat`, поэтому на Windows используется команда выше.
 
 ## Исходный код и лицензия
 

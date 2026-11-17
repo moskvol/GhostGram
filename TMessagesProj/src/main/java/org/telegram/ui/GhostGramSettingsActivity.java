@@ -171,13 +171,16 @@ public class GhostGramSettingsActivity extends BaseFragment {
             link(context, content, R.drawable.settings_folders, "Папки чатов Telegram", () -> presentFragment(new FiltersSetupActivity()));
             info(context, content, "В меню каждого чата есть зашифрованная локальная заметка GhostGram.");
         } else if (category == 3) {
+            switchRow(context, content, "Не отправлять индикатор набора текста", "ghost_hide_typing", false);
             videoSwitch = nativeSwitchRow(context, content, "Отключить автозапуск видео", !SharedConfig.isAutoplayVideo(), SharedConfig::toggleAutoplayVideo);
             gifSwitch = nativeSwitchRow(context, content, "Отключить автозапуск GIF", !SharedConfig.isAutoplayGifs(), SharedConfig::toggleAutoplayGifs);
+            link(context, content, R.drawable.settings_privacy, "Последняя активность и статус в сети", () -> presentFragment(new PrivacySettingsActivity()));
             link(context, content, R.drawable.settings_data, "Другие настройки медиа и загрузок", () -> presentFragment(new DataSettingsActivity()));
-            info(context, content, "Telegram API требует корректной отправки статусов набора текста и прочтения. Полный режим невидимки недоступен.");
+            info(context, content, "Индикатор набора текста можно не отправлять. Видимость статуса в сети и отметки прочтения регулируются правилами сервера Telegram; полная невидимость недоступна.");
         } else if (category == 5) {
+            switchRow(context, content, "Локальная галочка в моём профиле", "local_verified", false);
             switchRow(context, content, "Локальный значок Ghost Premium", "ghost_premium", false);
-            info(context, content, "Значок виден только в меню GhostGram и не меняет подписку Telegram.");
+            info(context, content, "Значки видны только в этом клиенте. Подписка, функции и статус аккаунта на серверах Telegram не меняются.");
         } else if (category == 7) {
             switchRow(context, content, "Блокировать снимки экрана и превью недавних", "hide_recents", false);
             link(context, content, R.drawable.settings_privacy, "PIN-код, биометрия и автоблокировка", () -> presentFragment(PasscodeActivity.determineOpenFragment()));

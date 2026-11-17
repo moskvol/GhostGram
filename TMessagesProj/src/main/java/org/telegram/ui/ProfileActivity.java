@@ -135,6 +135,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.GhostGramFeatures;
 import org.telegram.messenger.AuthTokensHelper;
 import org.telegram.messenger.BillingController;
 import org.telegram.messenger.BirthdayController;
@@ -11779,7 +11780,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (user.scam || user.fake) {
                     nameTextView.setRightDrawable2(getScamDrawable(user.scam ? 0 : 1));
                     nameTextViewRightDrawable2ContentDescription = LocaleController.getString(R.string.ScamMessage);
-                } else if (user.verified) {
+                } else if (user.verified || user.self && GhostGramFeatures.localVerified()) {
                     nameTextView.setRightDrawable2(getVerifiedCrossfadeDrawable());
                     nameTextViewRightDrawable2ContentDescription = LocaleController.getString(R.string.AccDescrVerified);
                 } else {
@@ -11790,7 +11791,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     rightIconIsStatus = true;
                     nameTextView.setRightDrawable(getEmojiStatusDrawable(user.emoji_status, true, true));
                     nameTextViewRightDrawableContentDescription = LocaleController.getString(R.string.AccDescrPremium);
-                } else if (getMessagesController().isPremiumUser(user)) {
+                } else if (getMessagesController().isPremiumUser(user) || user.self && GhostGramFeatures.localPremium()) {
                     rightIconIsPremium = true;
                     nameTextView.setRightDrawable(getEmojiStatusDrawable(null, true, true));
                     nameTextViewRightDrawableContentDescription = LocaleController.getString(R.string.AccDescrPremium);
