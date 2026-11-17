@@ -1719,6 +1719,7 @@ public class ChatActivity extends BaseFragment implements
     private final static int share_business_link = 66;
     private final static int rename_business_link = 67;
     private final static int delete_business_link = 68;
+    private final static int ghostgram_note = 9010;
 
     private final static int share = 69;
     private final static int open_direct = 70;
@@ -3557,6 +3558,49 @@ public class ChatActivity extends BaseFragment implements
         return parentChatActivity != null ? parentChatActivity.getGlassEngine() : glassEngine;
     }
 
+    private void openGhostGramNote() {
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
+        final String saved;
+        try {
+            saved = GhostGramNotes.read(context, currentAccount, dialog_id, getTopicId());
+        } catch (Exception error) {
+            showDialog(new AlertDialog.Builder(context, themeDelegate)
+                    .setTitle("Заметка GhostGram")
+                    .setMessage("Не удалось прочитать локальную заметку. Данные не изменены.")
+                    .setPositiveButton("ОК", null).create());
+            return;
+        }
+        EditText editor = new EditText(context);
+        editor.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+                | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        editor.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(4000)});
+        editor.setMinLines(4);
+        editor.setMaxLines(10);
+        editor.setGravity(Gravity.TOP | Gravity.START);
+        editor.setText(saved);
+        editor.setSelection(saved.length());
+        editor.setPadding(dp(24), dp(12), dp(24), dp(12));
+        showDialog(new AlertDialog.Builder(context, themeDelegate)
+                .setTitle("Заметка GhostGram")
+                .setMessage("Хранится только на этом устройстве")
+                .setView(editor)
+                .setPositiveButton("Сохранить", (dialog, which) -> {
+                    try {
+                        GhostGramNotes.write(context, currentAccount, dialog_id, getTopicId(), editor.getText().toString().trim());
+                    } catch (Exception error) {
+                        showDialog(new AlertDialog.Builder(context, themeDelegate)
+                                .setTitle("Заметка GhostGram")
+                                .setMessage("Не удалось сохранить заметку")
+                                .setPositiveButton("ОК", null).create());
+                    }
+                })
+                .setNegativeButton("Отмена", null).create());
+    }
+
     @Override
     public View createView(Context context) {
         Timer t = Timer.create("ChatActivity.createView");
@@ -3738,6 +3782,8 @@ public class ChatActivity extends BaseFragment implements
                             finishFragment();
                         }
                     }
+                } else if (id == ghostgram_note) {
+                    openGhostGramNote();
                 } else if (id == view_as_topics) {
                     if (getUserConfig().getClientUserId() == dialog_id) {
                         getMessagesController().setSavedViewAs(true);
@@ -4494,6 +4540,9 @@ public class ChatActivity extends BaseFragment implements
         if (currentChat != null && forumTopic != null && chatMode == 0) {
             closeTopicItem = headerItem.lazilyAddSubItem(topic_close, R.drawable.msg_topic_close, LocaleController.getString(R.string.CloseTopic));
             closeTopicItem.setVisibility(currentChat != null && ChatObject.canManageTopic(currentAccount, currentChat, forumTopic) && forumTopic != null && !forumTopic.closed ? View.VISIBLE : View.GONE);
+        }
+        if (headerItem != null && chatMode == MODE_DEFAULT && dialog_id != 0 && !isReport()) {
+            headerItem.lazilyAddSubItem(ghostgram_note, R.drawable.msg_edit, "Заметка GhostGram");
         }
         menu.setVisibility(inMenuMode ? View.GONE : View.VISIBLE);
 

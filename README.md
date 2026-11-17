@@ -1,3 +1,9 @@
+# GhostGram (unofficial preview)
+
+This fork contains work in progress on GhostGram, an unofficial Android client based on Telegram's open source client. See [GHOSTGRAM.md](GHOSTGRAM.md) for implemented features, limitations, and build instructions. **No public APK is provided yet** because this fork still uses the upstream dummy API and signing configuration.
+
+## Upstream Telegram README
+
 ## Telegram messenger for Android
 
 [Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.

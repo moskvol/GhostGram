@@ -386,6 +386,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     };
 
     private FlagSecureReason flagSecureReason;
+
+    public void updateGhostGramSecureFlag() {
+        if (flagSecureReason != null) {
+            flagSecureReason.invalidate();
+        }
+    }
     private BroadcastReceiver debugThemeReceiver;
     private boolean debugInstantThemeSwitch;
     private WindowAnimatedInsetsProvider rootAnimatedInsetsListener;
@@ -451,7 +457,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         getWindow().setBackgroundDrawable(new ActivityWindowEmptyBackgroundDrawable());
         getWindow().setFormat(PixelFormat.OPAQUE);
 
-        flagSecureReason = new FlagSecureReason(getWindow(), () -> SharedConfig.passcodeHash.length() > 0 && !SharedConfig.allowScreenCapture);
+        flagSecureReason = new FlagSecureReason(getWindow(), () ->
+                SharedConfig.passcodeHash.length() > 0 && !SharedConfig.allowScreenCapture ||
+                getSharedPreferences("ghostgram_mod", Context.MODE_PRIVATE).getBoolean("hide_recents", false));
         flagSecureReason.attach();
 
         super.onCreate(savedInstanceState);
